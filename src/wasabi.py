@@ -1,4 +1,6 @@
-import os, re, json
+import os
+import re
+import json
 import gzip
 from multiprocessing import Process
 from time import sleep
@@ -194,16 +196,7 @@ class Wasabi():
 
     def parse_file(self, args):
         path_name = args.path
-        pattern = args.regex
-        rx_contains = args.contains
-        delim = "/"
-
-        if system().lower() == "windows":
-            delim = "\\"
-
-        if rx_contains != None:
-            pattern = f".*.{rx_contains}.*"
-            rx_contains = None
+        pattern = self.regex
 
         if path_name == None:
             self.eprint("no file path was specified")
@@ -215,7 +208,7 @@ class Wasabi():
             return
         
         if self.is_relative_path(path_name) == True:
-            full_path = f"{full_path}{delim}{path_name}"
+            full_path = self.join_path([full_path, path_name])
         else:
             full_path = path_name
 
@@ -377,6 +370,30 @@ class Wasabi():
             return None
 
 
+    def join_path(self, strings: list) -> str:
+        delim = ""
+        out = ""
+
+        if system().lower() == "windows":
+            delim = "\\"
+        else:
+            delim = "/"
+
+        counter = 1
+        for i in strings:
+
+            if counter == len(strings):
+                out += i
+                break
+            
+            elif counter < len(strings):
+                out += i + delim
+
+            counter += 1
+
+        return out
+
+
     def parse_directory(self, args):
         path_name = args.path
         pattern = self.regex
@@ -392,15 +409,19 @@ class Wasabi():
             return
 
         if read_file_cnt == True and show_file_names == True:
-            self.eprint("--rfiles and --lnames cannot both be true!")
+            self.eprint("--open_files and --names cannot both be true!")
             return
 
         full_path = os.getcwd()
         if self.is_relative_path(path_name) == True:
-            full_path = f"{full_path}/{path_name}"
+            full_path = self.join_path([full_path, path_name])
         
         if os.path.exists(path_name) == False:
             self.eprint(f"the provided filename {path_name} does not exist")
+            return
+        
+        if read_file_cnt == False and show_file_names == False:
+            self.eprint("must provide either --open-files or --names")
             return
         
         if read_file_cnt == True:
